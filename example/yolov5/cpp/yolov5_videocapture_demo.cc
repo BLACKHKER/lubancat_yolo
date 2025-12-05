@@ -83,9 +83,9 @@ int main(int argc, char **argv)
             printf("Error: Could not open camera.\n");
             return -1;
         }
-        // cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
-        cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);//宽度
-        cap.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);//高度
+        cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+        // cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);//宽度
+        // cap.set(cv::CAP_PROP_FRAME_HEIGHT, 640);//高度
     } else {
         // 打开视频文件等
         cap.open(argv[2]);
@@ -180,15 +180,15 @@ int main(int argc, char **argv)
         sprintf(fps_text, "FPS: %.2f", fps);
 
         // 根据图像分辨率自适应调整FPS显示
-        double scale = frame.cols / 640.0;  // 以640为基准计算缩放比例
-        double font_scale = 0.8 * scale;    // 字体大小随分辨率缩放
-        int thickness = (int)(2 * scale);   // 线条粗细随分辨率缩放
-        int x_pos = (int)(20 * scale);      // X位置随分辨率缩放
-        int y_pos = (int)(40 * scale);      // Y位置随分辨率缩放
+        double scale = frame.cols / 640.0;
+        double font_scale = 0.8 * scale;
+        int thickness = (int)(2 * scale);
+        int x_pos = (int)(20 * scale);
+        int y_pos = (int)(40 * scale);
 
         printf("FPS: %.2f, Resolution: %dx%d, Scale: %.2f\n", fps, frame.cols, frame.rows, scale);
 
-        // 显示FPS文字（黄色，更醒目）
+        // 显示FPS文字黄色的
         cv::putText(frame, fps_text, cv::Point(x_pos, y_pos), cv::FONT_HERSHEY_SIMPLEX, font_scale, cv::Scalar(0, 255, 255), thickness);
 
 		cv::imshow("YOLOv5 Videocapture Demo", frame);
