@@ -315,7 +315,7 @@ python3 test.py
 ### 3.1 拉取克隆
 
 ```http
-git clone https://gitee.com/blackhker/lubancat_ai_manual_code.git
+git clone https://gitee.com/blackhker/lubancat_yolo.git
 ```
 
 
