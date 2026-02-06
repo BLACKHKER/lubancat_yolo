@@ -1,9 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/home/cat/Development/VisualStudioWorkspace/lubancat_ai_manual_code_cp/example/yolov5/cpp/build/build_rk3588_linux/cmake_install.cmake",
-		"/home/cat/Development/VisualStudioWorkspace/lubancat_ai_manual_code_cp/example/yolov5/cpp/build/build_rk3588_linux/3rdparty.out/cmake_install.cmake",
-		"/home/cat/Development/VisualStudioWorkspace/lubancat_ai_manual_code_cp/example/yolov5/cpp/build/build_rk3588_linux/utils.out/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
