@@ -83,9 +83,9 @@ int main(int argc, char **argv)
             printf("Error: Could not open camera.\n");
             return -1;
         }
-        cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
-        // cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);//宽度
-        // cap.set(cv::CAP_PROP_FRAME_HEIGHT, 640);//高度
+        // cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+        cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);//宽度
+        cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480);//高度
     } else {
         // 打开视频文件等
         cap.open(argv[2]);
