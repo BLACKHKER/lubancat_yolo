@@ -21,6 +21,7 @@
 
 #include "yolov5.h"
 #include "easy_timer.h"
+#include "camera.h"
 
 #include <opencv2/opencv.hpp>
 
@@ -51,16 +52,26 @@ static const unsigned char colors[19][3] = {
 -------------------------------------------*/
 int main(int argc, char **argv)
 {
-    if (argc != 3)
+    if (argc < 3 || argc > 4)
     {
-        printf("%s <model path> <camera device id/video path>\n", argv[0]);
-        printf("Usage: %s  yolov5s.rknn  0 \n", argv[0]);
-        printf("Usage: %s  yolov5s.rknn /path/xxxx.mp4\n", argv[0]);
+        printf("Usage: %s <model path> <camera device id/video path> [camera params csv]\n", argv[0]);
+        printf("  e.g: %s yolov5s.rknn 0\n", argv[0]);
+        printf("  e.g: %s yolov5s.rknn rtsp://... world_params.csv\n", argv[0]);
         return -1;
     }
 
-    const char *model_path = argv[1];
+    const char *model_path  = argv[1];
     const char *device_name = argv[2];
+
+    // 可选：加载相机内外参，用于世界坐标转换
+    Camera camera;
+    if (argc == 4) {
+        if (!camera.loadFromCSV(argv[3])) {
+            printf("警告：加载相机参数失败，将不进行坐标转换\n");
+        } else {
+            printf("相机参数加载成功，已启用世界坐标转换\n");
+        }
+    }
 
     int ret;
     TIMER timer;
@@ -169,6 +180,20 @@ int main(int argc, char **argv)
 
             cv::rectangle(frame, cv::Rect(cv::Point(x, y), cv::Size(label_size.width, label_size.height + baseLine)),cc,-1);
             cv::putText(frame, text, cv::Point(x, y + label_size.height),cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255));
+
+            // 世界坐标转换：取目标框底部中心点（地面目标）
+            if (camera.isCalibrated()) {
+                float pixel_x = (det_result->box.left + det_result->box.right) / 2.0f;
+                float pixel_y = det_result->box.bottom; // 底部中心点，贴近地面
+                double world_x, world_y;
+                if (camera.imageToWorld({pixel_x, pixel_y}, 0.0, world_x, world_y)) {
+                    char coord_text[64];
+                    snprintf(coord_text, sizeof(coord_text), "W:(%.1f, %.1f)", world_x, world_y);
+                    cv::putText(frame, coord_text,
+                                cv::Point(det_result->box.left, det_result->box.bottom + 15),
+                                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+                }
+            }
         }
 
         // 计算并显示FPS
