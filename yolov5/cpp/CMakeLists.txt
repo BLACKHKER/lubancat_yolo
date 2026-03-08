@@ -64,6 +64,7 @@ target_link_libraries(yolov5_image_demo
 add_executable(yolov5_videocapture_demo
     yolov5_videocapture_demo.cc
     postprocess.cc
+    camera.cc
     ${rknpu_yolov5_file}
 )
 
