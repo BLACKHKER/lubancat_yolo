@@ -216,6 +216,11 @@ int main(int argc, char **argv)
         // 显示FPS文字黄色的
         cv::putText(frame, fps_text, cv::Point(x_pos, y_pos), cv::FONT_HERSHEY_SIMPLEX, font_scale, cv::Scalar(0, 255, 255), thickness);
 
+        // 绘制世界坐标系三轴
+        if (camera.isCalibrated()) {
+            frame = camera.drawCoordinateSystem(frame, 500.0, 2);
+        }
+
 		cv::imshow("YOLOv5 Videocapture Demo", frame);
 
 		char c = cv::waitKey(1);

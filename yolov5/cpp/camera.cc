@@ -145,7 +145,7 @@ bool Camera::transform(cv::Point3d world_point, cv::Point2i &img_point) const
     return false;
 
   std::vector<cv::Point3d> pts_in = {world_point};
-  std::vector<cv::Point2f> pts_out;
+  std::vector<cv::Point2d> pts_out;
   cv::projectPoints(pts_in, rotation_vector_, translation_vector_,
                     intrinsic_matrix_, distortion_coefficients_, pts_out);
 
