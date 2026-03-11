@@ -24,6 +24,7 @@
 #include "camera.h"
 
 #include <opencv2/opencv.hpp>
+#include <vector>
 
 static const unsigned char colors[19][3] = {
     {54, 67, 244},
@@ -47,16 +48,36 @@ static const unsigned char colors[19][3] = {
     {139, 125, 96}
 };
 
+// 按类别过滤检测结果，对应 Python comm.py display_position 的 type_list 过滤逻辑
+// filter_classes 为空时不过滤，保留全部类别（等同于 Python classes=None）
+static void filter_by_class(object_detect_result_list *od_results,
+                             const std::vector<int> &filter_classes)
+{
+    if (filter_classes.empty()) return;
+    int new_count = 0;
+    for (int i = 0; i < od_results->count; i++) {
+        for (int cls : filter_classes) {
+            if (od_results->results[i].cls_id == cls) {
+                od_results->results[new_count++] = od_results->results[i];
+                break;
+            }
+        }
+    }
+    od_results->count = new_count;
+}
+
 /*-------------------------------------------
                   Main Function
 -------------------------------------------*/
 int main(int argc, char **argv)
 {
-    if (argc < 3 || argc > 4)
+    if (argc < 3)
     {
-        printf("Usage: %s <model path> <camera device id/video path> [camera params csv]\n", argv[0]);
+        printf("Usage: %s <model path> <camera device id/video path> [camera params csv] [--classes cls1 cls2 ...]\n", argv[0]);
         printf("  e.g: %s yolov5s.rknn 0\n", argv[0]);
         printf("  e.g: %s yolov5s.rknn rtsp://... world_params.csv\n", argv[0]);
+        printf("  e.g: %s yolov5s.rknn 0 --classes 0 1\n", argv[0]);
+        printf("  e.g: %s yolov5s.rknn rtsp://... world_params.csv --classes 0 1\n", argv[0]);
         return -1;
     }
 
@@ -65,12 +86,35 @@ int main(int argc, char **argv)
 
     // 可选：加载相机内外参，用于世界坐标转换
     Camera camera;
-    if (argc == 4) {
+    int next_arg = 3;
+    if (argc > 3 && argv[3][0] != '-') {
         if (!camera.loadFromCSV(argv[3])) {
             printf("警告：加载相机参数失败，将不进行坐标转换\n");
         } else {
             printf("相机参数加载成功，已启用世界坐标转换\n");
         }
+        next_arg = 4;
+    }
+
+    // 解析 --classes 参数，对应 Python track.py 的 --classes 参数
+    // 例如：--classes 0 1 表示只识别类别 0 和 1
+    std::vector<int> filter_classes;
+    for (int i = next_arg; i < argc; i++) {
+        if (strcmp(argv[i], "--classes") == 0) {
+            i++;
+            while (i < argc && argv[i][0] != '-') {
+                filter_classes.push_back(atoi(argv[i]));
+                i++;
+            }
+            i--;
+        }
+    }
+    if (!filter_classes.empty()) {
+        printf("类别过滤已启用，仅识别类别: ");
+        for (int c : filter_classes) printf("%d ", c);
+        printf("\n");
+    } else {
+        printf("类别过滤未启用，识别全部类别\n");
     }
 
     int ret;
@@ -149,6 +193,9 @@ int main(int argc, char **argv)
         }
         timer.tok();
         timer.print_time("inference_yolov5_model");
+
+        // 按类别过滤，对应 Python comm.py display_position 的 type_list 逻辑
+        filter_by_class(&od_results, filter_classes);
 
         char text[256];
         int color_index = 0;
