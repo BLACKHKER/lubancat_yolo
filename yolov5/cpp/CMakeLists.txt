@@ -45,30 +45,30 @@ set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 
 file(GLOB SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 
-# yolov5_image_demo
-add_executable(yolov5_image_demo
-    yolov5_image_demo.cc
+# image_detect
+add_executable(image_detect
+    image_detect.cc
     postprocess.cc
     ${rknpu_yolov5_file}
 )
 
-target_link_libraries(yolov5_image_demo
+target_link_libraries(image_detect
     imageutils
     fileutils
-    imagedrawing    
+    imagedrawing
     ${LIBRKNNRT}
     dl
 )
 
-# yolov5_videocapture_demo
-add_executable(yolov5_videocapture_demo
-    yolov5_videocapture_demo.cc
+# video_detect
+add_executable(video_detect
+    video_detect.cc
     postprocess.cc
     camera.cc
     ${rknpu_yolov5_file}
 )
 
-target_link_libraries(yolov5_videocapture_demo
+target_link_libraries(video_detect
     imageutils
     fileutils
     ${LIBRKNNRT}
@@ -79,24 +79,24 @@ target_link_libraries(yolov5_videocapture_demo
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
-    target_link_libraries(yolov5_image_demo Threads::Threads)
-    target_link_libraries(yolov5_videocapture_demo Threads::Threads)
+    target_link_libraries(image_detect Threads::Threads)
+    target_link_libraries(video_detect Threads::Threads)
 endif()
 
-target_include_directories(yolov5_image_demo PRIVATE
+target_include_directories(image_detect PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${LIBRKNNRT_INCLUDES}
     ${LIBTIMER_INCLUDES}
 )
 
-target_include_directories(yolov5_videocapture_demo PRIVATE
+target_include_directories(video_detect PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${LIBRKNNRT_INCLUDES}
     ${LIBTIMER_INCLUDES}
 )
 
-install(TARGETS yolov5_image_demo DESTINATION .)
-install(TARGETS yolov5_videocapture_demo DESTINATION .)
+install(TARGETS image_detect DESTINATION .)
+install(TARGETS video_detect DESTINATION .)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../model/bus.jpg DESTINATION ./model)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../model/coco_80_labels_list.txt DESTINATION ./model)
 file(GLOB RKNN_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../model/*.rknn")
