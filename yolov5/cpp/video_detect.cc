@@ -25,6 +25,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include <mosquitto.h>
 
 static const unsigned char colors[19][3] = {
     {54, 67, 244},
@@ -73,11 +74,11 @@ int main(int argc, char **argv)
 {
     if (argc < 3)
     {
-        printf("Usage: %s <model path> <camera device id/video path> [camera params csv] [--classes cls1 cls2 ...]\n", argv[0]);
+        printf("Usage: %s <model path> <camera device id/video path> [camera params csv] [--classes cls1 cls2 ...] [--mqtt broker port]\n", argv[0]);
         printf("  e.g: %s yolov5s.rknn 0\n", argv[0]);
         printf("  e.g: %s yolov5s.rknn rtsp://... world_params.csv\n", argv[0]);
         printf("  e.g: %s yolov5s.rknn 0 --classes 0 1\n", argv[0]);
-        printf("  e.g: %s yolov5s.rknn rtsp://... world_params.csv --classes 0 1\n", argv[0]);
+        printf("  e.g: %s yolov5s.rknn 0 world_params.csv --mqtt 192.168.1.100 1883\n", argv[0]);
         return -1;
     }
 
@@ -96,9 +97,12 @@ int main(int argc, char **argv)
         next_arg = 4;
     }
 
-    // 解析 --classes 参数，对应 Python track.py 的 --classes 参数
-    // 例如：--classes 0 1 表示只识别类别 0 和 1
+    // --classes 参数，对应 Python track.py 的 --classes 参数
+    // --classes 0 1 表示只识别类别 0 和 1
     std::vector<int> filter_classes;
+    const char *mqtt_broker = "8.137.120.144";
+    int mqtt_port = 1883;
+
     for (int i = next_arg; i < argc; i++) {
         if (strcmp(argv[i], "--classes") == 0) {
             i++;
@@ -107,6 +111,13 @@ int main(int argc, char **argv)
                 i++;
             }
             i--;
+        } else if (strcmp(argv[i], "--mqtt") == 0) {
+            if (i + 2 < argc) {
+                mqtt_broker = argv[++i];
+                mqtt_port   = atoi(argv[++i]);
+            } else {
+                printf("警告：--mqtt 需要 broker 和 port 两个参数\n");
+            }
         }
     }
     if (!filter_classes.empty()) {
@@ -115,6 +126,22 @@ int main(int argc, char **argv)
         printf("\n");
     } else {
         printf("类别过滤未启用，识别全部类别\n");
+    }
+
+    // 初始化 MQTT 客户端（默认连接 localhost:1883，可用 --mqtt broker port 覆盖）
+    struct mosquitto *mosq = nullptr;
+    mosquitto_lib_init();
+    mosq = mosquitto_new("yolov5_rk3588", true, nullptr);
+    if (!mosq) {
+        printf("MQTT 错误：创建客户端失败\n");
+    } else if (mosquitto_connect(mosq, mqtt_broker, mqtt_port, 60) != MOSQ_ERR_SUCCESS) {
+        printf("MQTT 错误：连接 %s:%d 失败，将不发送坐标\n", mqtt_broker, mqtt_port);
+        mosquitto_destroy(mosq);
+        mosq = nullptr;
+        mosquitto_lib_cleanup();
+    } else {
+        mosquitto_loop_start(mosq);
+        printf("MQTT 已连接 %s:%d，发布主题：track/data/location\n", mqtt_broker, mqtt_port);
     }
 
     int ret;
@@ -144,7 +171,7 @@ int main(int argc, char **argv)
     } else {
         // 打开视频文件等
         cap.open(argv[2]);
-        if (!cap.isOpened()) {  
+        if (!cap.isOpened()) {
             printf("Error: Could not open video file.\n");
             return -1;
         }
@@ -194,7 +221,7 @@ int main(int argc, char **argv)
         timer.tok();
         timer.print_time("inference_yolov5_model");
 
-        // 按类别过滤，对应 Python comm.py display_position 的 type_list 逻辑
+        // 按类别过滤
         filter_by_class(&od_results, filter_classes);
 
         char text[256];
@@ -239,6 +266,24 @@ int main(int argc, char **argv)
                     cv::putText(frame, coord_text,
                                 cv::Point(det_result->box.left, det_result->box.bottom + 15),
                                 cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+
+                    // 发布到 MQTT，格式与 track.py location_message_callback 一致
+                    // {"x": world_x, "y": world_y}
+                    if (mosq) {
+                        char payload[128];
+                        snprintf(payload, sizeof(payload), "{\"x\": %.2f, \"y\": %.2f}", world_x, world_y);
+                        int rc = mosquitto_publish(mosq, nullptr, "track/data/location",
+                                         strlen(payload), payload, 0, false);
+                        if (rc != MOSQ_ERR_SUCCESS) {
+                            printf("==========MQTT==========\n");
+                            printf("推送失败: %s\n", mosquitto_strerror(rc));
+                            printf("==========MQTT End==========\n");
+                        } else {
+                            printf("==========MQTT==========\n");
+                            printf("%s\n", payload);
+                            printf("==========MQTT End==========\n");
+                        }
+                    }
                 }
             }
         }
@@ -279,6 +324,12 @@ int main(int argc, char **argv)
 
 out:
     deinit_post_process();
+
+    if (mosq) {
+        mosquitto_loop_stop(mosq, true);
+        mosquitto_destroy(mosq);
+        mosquitto_lib_cleanup();
+    }
 
 #ifndef ENABLE_ZERO_COPY
     ret = release_yolov5_model(&rknn_app_ctx);

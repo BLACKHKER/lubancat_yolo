@@ -73,6 +73,7 @@ target_link_libraries(video_detect
     fileutils
     ${LIBRKNNRT}
     ${OpenCV_LIBS}
+    mosquitto
     dl
 )
 
@@ -97,6 +98,7 @@ target_include_directories(video_detect PRIVATE
 
 install(TARGETS image_detect DESTINATION .)
 install(TARGETS video_detect DESTINATION .)
+install(FILES /usr/lib/aarch64-linux-gnu/libmosquitto.so.1 DESTINATION lib)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../model/bus.jpg DESTINATION ./model)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../model/coco_80_labels_list.txt DESTINATION ./model)
 file(GLOB RKNN_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../model/*.rknn")
