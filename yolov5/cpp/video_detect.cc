@@ -102,6 +102,7 @@ int main(int argc, char **argv)
     std::vector<int> filter_classes;
     const char *mqtt_broker = "8.137.120.144";
     int mqtt_port = 1883;
+    int resize_w = 0, resize_h = 0; // 0 表示不缩放
 
     for (int i = next_arg; i < argc; i++) {
         if (strcmp(argv[i], "--classes") == 0) {
@@ -117,6 +118,15 @@ int main(int argc, char **argv)
                 mqtt_port   = atoi(argv[++i]);
             } else {
                 printf("警告：--mqtt 需要 broker 和 port 两个参数\n");
+            }
+        } else if (strcmp(argv[i], "--resize") == 0) {
+            if (i + 1 < argc) {
+                if (sscanf(argv[++i], "%dx%d", &resize_w, &resize_h) != 2) {
+                    printf("警告：--resize 格式错误，应为 WxH，例如 960x540\n");
+                    resize_w = resize_h = 0;
+                }
+            } else {
+                printf("警告：--resize 需要 WxH 参数\n");
             }
         }
     }
@@ -198,6 +208,11 @@ int main(int argc, char **argv)
         if (!cap.read(frame)) {
             printf("cap read frame fail!\n");
             break;
+        }
+
+        // 可选缩放，单独的参数
+        if (resize_w > 0 && resize_h > 0) {
+            cv::resize(frame, frame, cv::Size(resize_w, resize_h));
         }
 
         cv::cvtColor(frame, image, cv::COLOR_BGR2RGB);
