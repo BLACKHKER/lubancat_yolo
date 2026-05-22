@@ -1,10 +1,12 @@
-# RK-YOLO
+# Airockchip YOLOv5
 
 ## 一、环境搭建
 
 ### 1.1 基础环境
 
-#### 1.1.1 APT
+以下安装过程基于Linux lubancat 5.10.160 for arrch64(RK3588)，删除线表示可暂时不安装，有问题再安装
+
+#### <del>1.1.1 APT</del>
 
 > 一行完成安装
 
@@ -15,12 +17,20 @@ libgl1-mesa-glx libprotobuf-dev gcc
 
 
 
-#### <del>1.1.2 conda</del>
+#### <del>1.1.2 Conda</del>
 
 下载：
 
+实际安装版本
+
 ```http
 wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-py310_23.11.0-2-Linux-aarch64.sh
+```
+
+最新版本
+
+```http
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh
 ```
 
 安装：
@@ -64,15 +74,15 @@ pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 
 
-### 1.2 CMAKE
+### 1.2 cmake
 
-> 最好用Ubuntu来进行onnx到rknn的转化，因为RK需要安装cmake两次，且安装很慢；
+> 最好用Ubuntu来进行onnx到rknn的转化，因为RK需要安装两次cmake，且安装很慢；
 >
-> 在RK板子上进行转译，cmake版本过高，安装转译依赖时会不兼容；
+> 安装两次cmake的原因是：在RK板子上进行转译，cmake版本过高，安装转译依赖时会不兼容；
 >
-> 无虚拟/物理机条件的，可参考1.2.2，先安装低版本cmake，转换完rknn再卸载安装高版本即可
+> 无虚拟/物理机条件的，可参考1.2.2，先安装低版本cmake(3.5.2)，转换完rknn再卸载安装高版本即可
 >
-> RK板端进行转换，转换完编译RK-YOLO时，需要高版本(3.10+)才可以编译
+> RK板端进行转换，转换完编译时，需要高版本(3.10+)才可以编译
 
 #### 1.2.1 软件包安装
 
@@ -87,7 +97,7 @@ sudo apt install cmake
 
 #### 1.2.2 源码安装
 
-> RK板端转换rknn，测试版本cmakev3.5.2可行
+> RK板端转换rknn，测试cmake v3.5.2版本可行
 
 下载：
 
@@ -268,7 +278,9 @@ YOLO运行export.py，生成yolov5s.onnx
 
 ### 2.2 onnx转rknn
 
-> Ubuntu x86 PC
+> 平台：Ubuntu arm64 Lubancat rk3588 
+>
+> 仓库：rknn-tookit2
 
 #### 2.2.1 依赖下载
 
@@ -291,18 +303,14 @@ pip install rknn_toolkit2-2.3.2-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_a
 
 
 
----
-
-
-
-### 2.3 转型rknn
+#### 2.2.3 转型rknn
 
 > Ubuntu arrch64 Lubancat
 
 将onnx放入该文件，运行：
 
 ```bash
-cd ~/Development/PyCharmWorkspace/rknn-toolkit2/rknn-toolkit2/examples/onnx/yolov5
+cd ~/.../rknn-toolkit2/rknn-toolkit2/examples/onnx/yolov5
 python3 test.py
 ```
 

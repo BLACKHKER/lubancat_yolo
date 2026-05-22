@@ -8,10 +8,9 @@ import cv2
 from rknn.api import RKNN
 from copy import copy
 
-# RKNN模型路径
-RKNN_MODEL = './model/yolov5s.rknn'
+RKNN_MODEL = "./model/yolov5s.rknn"
 
-IMG_PATH = './model/bus.jpg'
+IMG_PATH = "./model/bus.jpg"
 
 DEVICE_ID = "192.168.103.152:5555"
 TARGET = "rk3588"
@@ -20,13 +19,7 @@ OBJ_THRESH = 0.25
 NMS_THRESH = 0.45
 IMG_SIZE = 640
 
-CLASSES = ("person", "bicycle", "car", "motorbike ", "aeroplane ", "bus ", "train", "truck ", "boat", "traffic light",
-           "fire hydrant", "stop sign ", "parking meter", "bench", "bird", "cat", "dog ", "horse ", "sheep", "cow", "elephant",
-           "bear", "zebra ", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite",
-           "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife ",
-           "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza ", "donut", "cake", "chair", "sofa",
-           "pottedplant", "bed", "diningtable", "toilet ", "tvmonitor", "laptop	", "mouse	", "remote ", "keyboard ", "cell phone", "microwave ",
-           "oven ", "toaster", "sink", "refrigerator ", "book", "clock", "vase", "scissors ", "teddy bear ", "hair drier", "toothbrush ")
+CLASSES = ("person", "bicycle", "car", "motorbike ", "aeroplane ", "bus ", "train", "truck ", "boat", "traffic light","fire hydrant", "stop sign ", "parking meter", "bench", "bird", "cat", "dog ", "horse ", "sheep", "cow", "elephant","bear", "zebra ", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite","baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife ","spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza ", "donut", "cake", "chair", "sofa","pottedplant", "bed", "diningtable", "toilet ", "tvmonitor", "laptop	", "mouse	", "remote ", "keyboard ", "cell phone", "microwave ","oven ", "toaster", "sink", "refrigerator ", "book", "clock", "vase", "scissors ", "teddy bear ", "hair drier", "toothbrush ")
 
 
 def xywh2xyxy(x):
@@ -67,7 +60,7 @@ def process(input, mask, anchors):
 
 
 def filter_boxes(boxes, box_confidences, box_class_probs):
-    """Filter boxes with box threshold. It's a bit different with origin yolov5 post process!
+    """Filter boxes with box threshold. It"s a bit different with origin yolov5 post process!
 
     # Arguments
         boxes: ndarray, boxes of objects.
@@ -191,8 +184,8 @@ def draw(image, boxes, scores, classes):
         scores: ndarray, scores of objects.
         all_classes: all classes name.
     """
-    print("{:^12} {:^12}  {}".format('class', 'score', 'xmin, ymin, xmax, ymax'))
-    print('-' * 50)
+    print("{:^12} {:^12}  {}".format("class", "score", "xmin, ymin, xmax, ymax"))
+    print("-" * 50)
     for box, score, cl in zip(boxes, scores, classes):
         top, left, right, bottom = box
         top = int(top)
@@ -201,7 +194,7 @@ def draw(image, boxes, scores, classes):
         bottom = int(bottom)
 
         cv2.rectangle(image, (top, left), (right, bottom), (255, 0, 0), 2)
-        cv2.putText(image, '{0} {1:.2f}'.format(CLASSES[cl], score),
+        cv2.putText(image, "{0} {1:.2f}".format(CLASSES[cl], score),
                     (top, left - 6),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.6, (0, 0, 255), 2)
@@ -252,33 +245,27 @@ def get_real_box(src_shape, box, dw, dh, ratio):
     bbox[:,3] = np.clip(bbox[:,3], 0, src_shape[0])
     return bbox
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    # RKNN对象
     rknn = RKNN()
     rknn.list_devices()
-
-    # 加载rknn模型
     rknn.load_rknn(path=RKNN_MODEL)
 
-    # 设置运行环境，目标默认是rk3588
     ret = rknn.init_runtime(target=TARGET, device_id=DEVICE_ID)
 
-    # 设置输入
     img_src = cv2.imread(IMG_PATH)
     src_shape = img_src.shape[:2]
     img, ratio, (dw, dh) = letterbox(img_src, new_shape=(IMG_SIZE, IMG_SIZE))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     #img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
 
-    # 模型推理
-    print('--> Running model')
+    print("Running model")
     img2 = np.expand_dims(img, 0)
-    outputs = rknn.inference(inputs=[img2], data_format=['nhwc'])
-    #np.save('./onnx_yolov5_0.npy', outputs[0])
-    #np.save('./onnx_yolov5_1.npy', outputs[1])
-    #np.save('./onnx_yolov5_2.npy', outputs[2])
-    print('done')
+    outputs = rknn.inference(inputs=[img2], data_format=["nhwc"])
+    #np.save("./onnx_yolov5_0.npy", outputs[0])
+    #np.save("./onnx_yolov5_1.npy", outputs[1])
+    #np.save("./onnx_yolov5_2.npy", outputs[2])
+    print("done")
 
     # 后处理
     input0_data = outputs[0]
@@ -300,7 +287,7 @@ if __name__ == '__main__':
     if boxes is not None:
         boxes = get_real_box(src_shape, boxes, dw, dh, ratio)
         draw(img_src, boxes, scores, classes)
-        cv2.imwrite('result.jpg', img_src)
-        print('Save results to result.jpg!')
+        cv2.imwrite("result.jpg", img_src)
+        print("Save results to result.jpg!")
 
     rknn.release()
