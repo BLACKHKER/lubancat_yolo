@@ -1,0 +1,1 @@
+./yolo26_det_videocapture ./yolo26_i8.rknn 1
