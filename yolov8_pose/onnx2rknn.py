@@ -1,8 +1,8 @@
 import sys,os
 from rknn.api import RKNN
 
-DATASET_PATH = '../../datasets/COCO/coco_subset_20.txt'
-DEFAULT_RKNN_PATH = './model/yolov8_pose.rknn'
+DATASET_PATH = '../datasets/Space/calib.txt'
+DEFAULT_RKNN_PATH = '../weights/yolov8_pose.rknn'
 DEFAULT_QUANT = False
 
 def parse_arg():
