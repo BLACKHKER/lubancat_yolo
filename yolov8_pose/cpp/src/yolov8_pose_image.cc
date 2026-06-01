@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 
         for (int j = 0; j < 38/2; ++j)
         {
-            if((det_result->keypoints[skeleton[2*j]-1][2] < 0.5) || (det_result->keypoints[skeleton[2*j+1]-1][0] < 0.5))
+            if((det_result->keypoints[skeleton[2*j]-1][2] < 0.5) || (det_result->keypoints[skeleton[2*j+1]-1][2] < 0.5))
                 continue;
             draw_line(&src_image, (int)(det_result->keypoints[skeleton[2*j]-1][0]),(int)(det_result->keypoints[skeleton[2*j]-1][1]),
              (int)(det_result->keypoints[skeleton[2*j+1]-1][0]),(int)(det_result->keypoints[skeleton[2*j+1]-1][1]),COLOR_ORANGE,3);

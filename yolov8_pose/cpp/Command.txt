@@ -1,2 +1,0 @@
-./yolov8_pose_image ./yolov8_pose.rknn ./model/bus.jpg
-./yolov8_pose_videocapture ./yolov8_pose.rknn 1
