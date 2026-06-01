@@ -45,6 +45,7 @@ target_link_libraries(yolov8_pose_image
 add_executable(yolov8_pose_videocapture
     src/yolov8_pose.cc
     src/postprocess.cc
+    src/camera.cc
     src/yolov8_pose_videocapture.cc
 )
 
@@ -74,5 +75,6 @@ install(TARGETS yolov8_pose_image DESTINATION .)
 install(TARGETS yolov8_pose_videocapture DESTINATION .)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../model/bus.jpg DESTINATION model)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../model/yolov8_pose_labels_list.txt DESTINATION model)
-file(GLOB RKNN_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../model/*.rknn")
-install(FILES ${RKNN_FILES} DESTINATION model)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../weights/yolov8_pose.rknn DESTINATION .)
+file(GLOB CSV_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../yolov8_pose/world_params.csv")
+install(FILES ${CSV_FILES} DESTINATION .)
