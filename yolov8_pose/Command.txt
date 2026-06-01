@@ -1,0 +1,5 @@
+./yolov8_pose_image ./yolov8_pose.rknn ./model/bus.jpg
+./yolov8_pose_videocapture ./yolov8_pose.rknn 1
+
+python onnx2rknn.py ./best.onnx rk3588 fp/i8
+watch -n 1 sudo cat /sys/kernel/debug/rknpu/load
