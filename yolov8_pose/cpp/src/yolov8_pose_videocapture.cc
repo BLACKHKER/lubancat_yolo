@@ -9,6 +9,7 @@
 #include "yolov8_pose.h"
 #include "file_utils.h"
 #include "image_utils.h"
+#include "camera.h"
 
 #include <opencv2/opencv.hpp>
 
@@ -209,16 +210,27 @@ static void draw_pose(cv::Mat &image, const object_detect_result *det_result)
 
 int main(int argc, char **argv)
 {
-  if (argc != 3)
+  if (argc < 3)
   {
-    printf("%s <model path> <camera device id/video path>\n", argv[0]);
+    printf("%s <model path> <camera device id/video path> [world_params.csv]\n", argv[0]);
     printf("Usage: %s  yolov8_pose.rknn  0 \n", argv[0]);
     printf("Usage: %s  yolov8_pose.rknn /path/xxxx.mp4\n", argv[0]);
+    printf("Usage: %s  yolov8_pose.rknn  0  world_params.csv\n", argv[0]);
     return -1;
   }
 
   const char *model_path = argv[1];
   const char *device_name = argv[2];
+
+  // 相机内外参
+  Camera camera;
+  if (argc > 3) {
+    if (!camera.loadFromCSV(argv[3])) {
+      printf("加载相机参数失败，不进行坐标转换\n");
+    } else {
+      printf("相机参数加载成功，转相对世界坐标\n");
+    }
+  }
 
   int ret;
   cv::Mat frame, image;
@@ -333,6 +345,31 @@ int main(int argc, char **argv)
       cv::putText(frame, action_name, cv::Point(det_result->box.left, action_y),
                   cv::FONT_HERSHEY_SIMPLEX, 1, action_color, 2, cv::LINE_AA);
 
+      // 世界坐标转换：person 用踝关节中点，其他用 bbox 底边中点
+      if (camera.isCalibrated()) {
+        float pixel_x, pixel_y;
+        if (det_result->cls_id == 0 &&
+            kp_valid(det_result->keypoints[15]) && kp_valid(det_result->keypoints[16])) {
+          // person: 用左右踝关节中点作为落地点
+          pixel_x = (det_result->keypoints[15][0] + det_result->keypoints[16][0]) / 2.0f;
+          pixel_y = (det_result->keypoints[15][1] + det_result->keypoints[16][1]) / 2.0f;
+        } else {
+          // 其他目标或踝关节不可见: 用 bbox 底边中点
+          pixel_x = (det_result->box.left + det_result->box.right) / 2.0f;
+          pixel_y = det_result->box.bottom;
+        }
+
+        double world_x, world_y;
+        if (camera.imageToWorld({pixel_x, pixel_y}, 0.0, world_x, world_y)) {
+          char coord_text[64];
+          snprintf(coord_text, sizeof(coord_text), "W:(%.1f, %.1f)", world_x, world_y);
+          cv::putText(frame, coord_text,
+                      cv::Point(det_result->box.left, det_result->box.bottom + 40),
+                      cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+          printf("%s World: (%.1f, %.1f)\n", coco_cls_to_name(det_result->cls_id), world_x, world_y);
+        }
+      }
+
       printf("Action: %s\n", action_name);
     }
 
@@ -340,6 +377,11 @@ int main(int argc, char **argv)
     if (od_results.count == 0)
     {
       hip_history.clear();
+    }
+
+    // 绘制世界坐标系三轴（X红/Y蓝/Z紫）
+    if (camera.isCalibrated()) {
+      frame = camera.drawCoordinateSystem(frame, 500.0, 2);
     }
 
     // 显示结果
