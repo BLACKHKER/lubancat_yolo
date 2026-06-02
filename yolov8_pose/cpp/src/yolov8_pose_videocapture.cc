@@ -12,6 +12,7 @@
 #include "camera.h"
 
 #include <opencv2/opencv.hpp>
+#include <mosquitto.h>
 
 #define KP_LEFT_SHOULDER 5
 #define KP_RIGHT_SHOULDER 6
@@ -232,6 +233,23 @@ int main(int argc, char **argv)
     }
   }
 
+  // MQTT 初始化
+  const char *mqtt_broker = "8.137.120.144";
+  int mqtt_port = 1883;
+  struct mosquitto *mosq = nullptr;
+  mosquitto_lib_init();
+  mosq = mosquitto_new("yolov8_pose_rk3588", true, nullptr);
+  if (!mosq) {
+    printf("MQTT: 创建客户端失败\n");
+  } else if (mosquitto_connect(mosq, mqtt_broker, mqtt_port, 60) != MOSQ_ERR_SUCCESS) {
+    printf("MQTT: 连接 %s:%d 失败，将不发送坐标\n", mqtt_broker, mqtt_port);
+    mosquitto_destroy(mosq);
+    mosq = nullptr;
+  } else {
+    mosquitto_loop_start(mosq);
+    printf("MQTT: 已连接 %s:%d\n", mqtt_broker, mqtt_port);
+  }
+
   int ret;
   cv::Mat frame, image;
   struct timeval start_time, stop_time;
@@ -332,29 +350,30 @@ int main(int argc, char **argv)
 
       draw_pose(frame, det_result);
 
-      // 动作分类
-      Action action = classify_action(det_result);
-      const char *action_name = action_names[action];
-      cv::Scalar action_color = action_colors[action];
+      // 动作分类和显示（仅 person，cls_id=0）
+      const char *action_name = "none";
+      if (det_result->cls_id == 0) {
+        Action action = classify_action(det_result);
+        action_name = action_names[action];
+        cv::Scalar action_color = action_colors[action];
 
-      // 在人体框下方显示动作标签
-      int action_y = det_result->box.bottom + 20;
-      if (action_y > frame.rows - 10)
-        action_y = det_result->box.bottom - 10;
+        int action_y = det_result->box.bottom + 20;
+        if (action_y > frame.rows - 10)
+          action_y = det_result->box.bottom - 10;
 
-      cv::putText(frame, action_name, cv::Point(det_result->box.left, action_y),
-                  cv::FONT_HERSHEY_SIMPLEX, 1, action_color, 2, cv::LINE_AA);
+        cv::putText(frame, action_name, cv::Point(det_result->box.left, action_y),
+                    cv::FONT_HERSHEY_SIMPLEX, 1, action_color, 2, cv::LINE_AA);
+        printf("Action: %s\n", action_name);
+      }
 
-      // 世界坐标转换：person 用踝关节中点，其他用 bbox 底边中点
+      // 世界坐标转换
       if (camera.isCalibrated()) {
         float pixel_x, pixel_y;
         if (det_result->cls_id == 0 &&
             kp_valid(det_result->keypoints[15]) && kp_valid(det_result->keypoints[16])) {
-          // person: 用左右踝关节中点作为落地点
           pixel_x = (det_result->keypoints[15][0] + det_result->keypoints[16][0]) / 2.0f;
           pixel_y = (det_result->keypoints[15][1] + det_result->keypoints[16][1]) / 2.0f;
         } else {
-          // 其他目标或踝关节不可见: 用 bbox 底边中点
           pixel_x = (det_result->box.left + det_result->box.right) / 2.0f;
           pixel_y = det_result->box.bottom;
         }
@@ -367,10 +386,30 @@ int main(int argc, char **argv)
                       cv::Point(det_result->box.left, det_result->box.bottom + 40),
                       cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
           printf("%s World: (%.1f, %.1f)\n", coco_cls_to_name(det_result->cls_id), world_x, world_y);
+
+          // MQTT 发布：person 和 agv 分不同主题
+          if (mosq) {
+            char payload[256];
+            if (det_result->cls_id == 0) {
+              // person: 发送坐标 + 动作
+              // topic: yolov8_pose/person
+              snprintf(payload, sizeof(payload),
+                       "{\"x\":%.2f,\"y\":%.2f,\"action\":\"%s\",\"conf\":%.2f}",
+                       world_x, world_y, action_name, det_result->prop);
+              mosquitto_publish(mosq, nullptr, "yolov8_pose/person",
+                                strlen(payload), payload, 0, false);
+            } else {
+              // agv: 只发送坐标，不发动作
+              // topic: yolov8_pose/agv
+              snprintf(payload, sizeof(payload),
+                       "{\"x\":%.2f,\"y\":%.2f,\"conf\":%.2f}",
+                       world_x, world_y, det_result->prop);
+              mosquitto_publish(mosq, nullptr, "yolov8_pose/agv",
+                                strlen(payload), payload, 0, false);
+            }
+          }
         }
       }
-
-      printf("Action: %s\n", action_name);
     }
 
     // 如果没有检测到人，清空历史
@@ -399,7 +438,15 @@ out:
   ret = release_yolov8_pose_model(&rknn_app_ctx);
   if (ret != 0)
   {
-    printf("release_yolov10_model fail! ret=%d\n", ret);
+    printf("release_yolov8_pose_model fail! ret=%d\n", ret);
   }
+
+  // MQTT 清理
+  if (mosq) {
+    mosquitto_loop_stop(mosq, true);
+    mosquitto_destroy(mosq);
+  }
+  mosquitto_lib_cleanup();
+
   return 0;
 }

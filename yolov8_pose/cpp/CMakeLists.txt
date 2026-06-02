@@ -54,6 +54,7 @@ target_link_libraries(yolov8_pose_videocapture
  fileutils
  ${LIBRKNNRT}
  ${OpenCV_LIBS}
+ mosquitto
  dl
 )
 
@@ -78,3 +79,4 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../model/yolov8_pose_labels_list.txt D
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../weights/yolov8_pose.rknn DESTINATION .)
 file(GLOB CSV_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../yolov8_pose/world_params.csv")
 install(FILES ${CSV_FILES} DESTINATION .)
+install(FILES /usr/lib/aarch64-linux-gnu/libmosquitto.so.1 DESTINATION lib OPTIONAL)
