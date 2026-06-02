@@ -4,3 +4,6 @@
 
 python onnx2rknn.py ./best.onnx rk3588 fp/i8
 watch -n 1 sudo cat /sys/kernel/debug/rknpu/load
+
+v4l2-ctl --list-devices
+v4l2-ctl -d /dev/video1 --list-formats-ext
