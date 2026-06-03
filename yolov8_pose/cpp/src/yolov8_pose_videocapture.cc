@@ -288,16 +288,16 @@ int main(int argc, char **argv)
       return -1;
     }
   }
+  int frame_count = 0;
+  struct timeval frame_start, frame_end;
+
   init_post_process();
   ret = init_yolov8_pose_model(model_path, &rknn_app_ctx);
   if (ret != 0)
   {
-    printf("init_yolov10_model fail! ret=%d model_path=%s\n", ret, model_path);
+    printf("init_yolov8_pose_model fail! ret=%d model_path=%s\n", ret, model_path);
     goto out;
   }
-
-  int frame_count = 0;
-  struct timeval frame_start, frame_end;
 
   while (true)
   {
