@@ -296,8 +296,13 @@ int main(int argc, char **argv)
     goto out;
   }
 
+  int frame_count = 0;
+  struct timeval frame_start, frame_end;
+
   while (true)
   {
+    gettimeofday(&frame_start, NULL);
+
     if (!cap.read(frame))
     {
       printf("cap read frame fail!\n");
@@ -424,6 +429,24 @@ int main(int argc, char **argv)
     // 绘制世界坐标系三轴（X红/Y蓝/Z紫）
     if (camera.isCalibrated()) {
       frame = camera.drawCoordinateSystem(frame, 500.0, 2);
+    }
+
+    // FPS 统计
+    gettimeofday(&frame_end, NULL);
+    double frame_ms = (frame_end.tv_sec - frame_start.tv_sec) * 1000.0 +
+                      (frame_end.tv_usec - frame_start.tv_usec) / 1000.0;
+    double fps = 1000.0 / frame_ms;
+    frame_count++;
+
+    char fps_text[64];
+    snprintf(fps_text, sizeof(fps_text), "FPS: %.1f  (%.1fms)", fps, frame_ms);
+    cv::putText(frame, fps_text, cv::Point(10, 30),
+                cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 255), 2);
+
+    // 每 30 帧打印一次性能汇总
+    if (frame_count % 30 == 0) {
+      printf("===== 性能: FPS=%.1f, 端到端=%.1fms, 检测数=%d =====\n",
+             fps, frame_ms, od_results.count);
     }
 
     // 显示结果

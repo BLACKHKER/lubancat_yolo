@@ -211,13 +211,11 @@ int inference_yolov8_pose_model(rknn_app_context_t *app_ctx, image_buffer_t *img
   }
 
   // Run
-  printf("rknn_run\n");
-  // int start_us,end_us;
-  // start_us = getCurrentTimeUs();
+  int64_t start_us, elapsed_us;
+  start_us = getCurrentTimeUs();
   ret = rknn_run(app_ctx->rknn_ctx, nullptr);
-  // end_us = getCurrentTimeUs() - start_us;
-  // printf("rknn_run time=%.2fms, FPS = %.2f\n",end_us / 1000.f,
-  //         1000.f * 1000.f / end_us);
+  elapsed_us = getCurrentTimeUs() - start_us;
+  printf("rknn_run: %.2fms\n", elapsed_us / 1000.f);
 
   if (ret < 0)
   {
@@ -239,11 +237,10 @@ int inference_yolov8_pose_model(rknn_app_context_t *app_ctx, image_buffer_t *img
     goto out;
   }
   // Post Process
-  // start_us = getCurrentTimeUs();
+  start_us = getCurrentTimeUs();
   post_process(app_ctx, outputs, &letter_box, box_conf_threshold, nms_threshold, od_results);
-  // end_us = getCurrentTimeUs() - start_us;
-  // printf("post_process time=%.2fms, FPS = %.2f\n",end_us / 1000.f,
-  //         1000.f * 1000.f / end_us);
+  elapsed_us = getCurrentTimeUs() - start_us;
+  printf("post_process: %.2fms\n", elapsed_us / 1000.f);
   // Remeber to release rknn output
   rknn_outputs_release(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs);
 
