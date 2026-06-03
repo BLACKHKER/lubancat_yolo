@@ -21,6 +21,10 @@
 #define KP_LEFT_HIP 11
 #define KP_RIGHT_HIP 12
 
+// 坐标输出单位: 1.0=mm, 10.0=cm, 1000.0=m
+#define COORD_UNIT_DIVISOR  10.0
+#define COORD_UNIT_NAME     "cm"
+
 #define RAISE_HAND_Y_THRESH 30.0f
 #define MOVE_DISTANCE_THRESH 15.0f
 #define HISTORY_FRAME_COUNT 5
@@ -233,7 +237,6 @@ int main(int argc, char **argv)
     }
   }
 
-  // MQTT 初始化
   const char *mqtt_broker = "8.137.120.144";
   int mqtt_port = 1883;
   struct mosquitto *mosq = nullptr;
@@ -380,30 +383,30 @@ int main(int argc, char **argv)
 
         double world_x, world_y;
         if (camera.imageToWorld({pixel_x, pixel_y}, 0.0, world_x, world_y)) {
+          // 单位转换
+          double out_x = world_x / COORD_UNIT_DIVISOR;
+          double out_y = world_y / COORD_UNIT_DIVISOR;
+
           char coord_text[64];
-          snprintf(coord_text, sizeof(coord_text), "W:(%.1f, %.1f)", world_x, world_y);
+          snprintf(coord_text, sizeof(coord_text), "W:(%.1f, %.1f)%s", out_x, out_y, COORD_UNIT_NAME);
           cv::putText(frame, coord_text,
                       cv::Point(det_result->box.left, det_result->box.bottom + 40),
                       cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
-          printf("%s World: (%.1f, %.1f)\n", coco_cls_to_name(det_result->cls_id), world_x, world_y);
+          printf("%s World: (%.1f, %.1f) %s\n", coco_cls_to_name(det_result->cls_id), out_x, out_y, COORD_UNIT_NAME);
 
           // MQTT 发布：person 和 agv 分不同主题
           if (mosq) {
             char payload[256];
             if (det_result->cls_id == 0) {
-              // person: 发送坐标 + 动作
-              // topic: yolov8_pose/person
               snprintf(payload, sizeof(payload),
-                       "{\"x\":%.2f,\"y\":%.2f,\"action\":\"%s\",\"conf\":%.2f}",
-                       world_x, world_y, action_name, det_result->prop);
+                       "{\"x\":%.2f,\"y\":%.2f,\"unit\":\"%s\",\"action\":\"%s\",\"conf\":%.2f}",
+                       out_x, out_y, COORD_UNIT_NAME, action_name, det_result->prop);
               mosquitto_publish(mosq, nullptr, "yolov8_pose/person",
                                 strlen(payload), payload, 0, false);
             } else {
-              // agv: 只发送坐标，不发动作
-              // topic: yolov8_pose/agv
               snprintf(payload, sizeof(payload),
-                       "{\"x\":%.2f,\"y\":%.2f,\"conf\":%.2f}",
-                       world_x, world_y, det_result->prop);
+                       "{\"x\":%.2f,\"y\":%.2f,\"unit\":\"%s\",\"conf\":%.2f}",
+                       out_x, out_y, COORD_UNIT_NAME, det_result->prop);
               mosquitto_publish(mosq, nullptr, "yolov8_pose/agv",
                                 strlen(payload), payload, 0, false);
             }
