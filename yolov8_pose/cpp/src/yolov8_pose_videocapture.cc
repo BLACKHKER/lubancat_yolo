@@ -383,7 +383,8 @@ int main(int argc, char **argv)
           pixel_y = (det_result->keypoints[15][1] + det_result->keypoints[16][1]) / 2.0f;
         } else {
           pixel_x = (det_result->box.left + det_result->box.right) / 2.0f;
-          pixel_y = det_result->box.bottom;
+          pixel_y = (det_result->box.top + det_result->box.bottom) / 2.0f;
+          // pixel_y = det_result->box.bottom;
         }
 
         double world_x, world_y;
