@@ -25,6 +25,12 @@
 #define COORD_UNIT_DIVISOR  10.0
 #define COORD_UNIT_NAME     "cm"
 
+// AGV 自适应取点参数（需实测后填入）
+// BOX_H_MIN: 最远处 AGV 的 bbox 高度（像素），此时用底边中点
+// BOX_H_MAX: 最近处 AGV 的 bbox 高度（像素），此时用中心点
+#define AGV_BOX_H_MIN  50.0f   // TODO: 实测后修改
+#define AGV_BOX_H_MAX  180.0f  // TODO: 实测后修改
+
 #define RAISE_HAND_Y_THRESH 30.0f
 #define MOVE_DISTANCE_THRESH 15.0f
 #define HISTORY_FRAME_COUNT 5
@@ -382,9 +388,19 @@ int main(int argc, char **argv)
           pixel_x = (det_result->keypoints[15][0] + det_result->keypoints[16][0]) / 2.0f;
           pixel_y = (det_result->keypoints[15][1] + det_result->keypoints[16][1]) / 2.0f;
         } else {
+          // AGV: 根据 bbox 高度自适应取点（近处→中心，远处→底边）
+          float box_h = det_result->box.bottom - det_result->box.top;
+          float box_center_y = (det_result->box.top + det_result->box.bottom) / 2.0f;
+          float box_bottom_y = det_result->box.bottom;
+
+          float alpha = (box_h - AGV_BOX_H_MIN) / (AGV_BOX_H_MAX - AGV_BOX_H_MIN);
+          alpha = std::max(0.0f, std::min(1.0f, alpha));
+
           pixel_x = (det_result->box.left + det_result->box.right) / 2.0f;
-          pixel_y = (det_result->box.top + det_result->box.bottom) / 2.0f;
-          // pixel_y = det_result->box.bottom;
+          pixel_y = alpha * box_center_y + (1.0f - alpha) * box_bottom_y;
+
+          printf("[AGV] box_h=%.0f alpha=%.2f pixel_y=%.0f (center=%.0f bottom=%.0f)\n",
+                 box_h, alpha, pixel_y, box_center_y, box_bottom_y);
         }
 
         double world_x, world_y;
