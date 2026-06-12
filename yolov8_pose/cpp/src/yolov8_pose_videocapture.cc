@@ -350,7 +350,7 @@ int main(int argc, char **argv)
       goto out;
     }
 
-    // 每帧开始前清空历史（仅对第一个检测到的人做动作分类）
+    // 每帧开始前清空历史(仅对第一个检测到的人做动作分类)
     // 如果需要多人分别追踪，需要为每个人维护独立的历史
     int color_index = 0;
     char text[256];
@@ -427,18 +427,18 @@ int main(int argc, char **argv)
             int bx_left  = det_result->box.left;
             int bx_right = det_result->box.right;
 
-            // bbox 中心横线（绿色）
+            // bbox中心横线(绿色)
             cv::line(frame, cv::Point(bx_left, cy), cv::Point(bx_right, cy),
                      cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
-            // bbox 底边横线（红色）
+            // bbox底边横线(红色)
             cv::line(frame, cv::Point(bx_left, by), cv::Point(bx_right, by),
                      cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
-            // 当前取点横线（黄色，最粗最醒目）
+            // 当前取点横线(黄色)
             cv::line(frame, cv::Point(bx_left, py), cv::Point(bx_right, py),
                      cv::Scalar(0, 255, 255), 2, cv::LINE_AA);
-            // 实心圆标记取点（黄色）
+            // 实心圆标记取点(黄色)
             cv::circle(frame, cv::Point(cx, py), 5, cv::Scalar(0, 255, 255), -1, cv::LINE_AA);
-            // 标注 alpha 和 box_h
+            // 标注alpha和box_h
             char alpha_text[32];
             snprintf(alpha_text, sizeof(alpha_text), "a=%.2f h=%.0f", alpha, box_h);
             cv::putText(frame, alpha_text,
@@ -489,7 +489,7 @@ int main(int argc, char **argv)
       hip_history.clear();
     }
 
-    // 绘制世界坐标系三轴（X红/Y蓝/Z紫）
+    // 绘制世界坐标系三轴(X红/Y蓝/Z紫)
     if (camera.isCalibrated()) {
       frame = camera.drawCoordinateSystem(frame, 500.0, 2);
     }
