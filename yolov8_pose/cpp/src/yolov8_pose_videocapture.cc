@@ -224,6 +224,8 @@ int main(int argc, char **argv)
   {
     printf("%s <model path> <camera device id/video path> [world_params.csv] [--debug]\n", argv[0]);
     printf("Usage: %s  yolov8_pose.rknn  0\n", argv[0]);
+    printf("%s <model path> <camera device id/video path> [world_params.csv] [--debug]\n", argv[0]);
+    printf("Usage: %s  yolov8_pose.rknn  0\n", argv[0]);
     printf("Usage: %s  yolov8_pose.rknn  0  world_params.csv\n", argv[0]);
     printf("Usage: %s  yolov8_pose.rknn  0  world_params.csv  --debug\n", argv[0]);
     printf("--debug: 在画面上显示AGV坐标取点位置\n");
@@ -232,6 +234,15 @@ int main(int argc, char **argv)
 
   const char *model_path = argv[1];
   const char *device_name = argv[2];
+
+  // 解析可选参数
+  bool debug_point = false;
+  for (int i = 3; i < argc; i++) {
+    if (strcmp(argv[i], "--debug") == 0) {
+      debug_point = true;
+      printf("调试模式：显示AGV取点位置\n");
+    }
+  }
 
   // 解析可选参数
   bool debug_point = false;
