@@ -222,19 +222,29 @@ int main(int argc, char **argv)
 {
   if (argc < 3)
   {
-    printf("%s <model path> <camera device id/video path> [world_params.csv]\n", argv[0]);
-    printf("Usage: %s  yolov8_pose.rknn  0 \n", argv[0]);
-    printf("Usage: %s  yolov8_pose.rknn /path/xxxx.mp4\n", argv[0]);
+    printf("%s <model path> <camera device id/video path> [world_params.csv] [--debug]\n", argv[0]);
+    printf("Usage: %s  yolov8_pose.rknn  0\n", argv[0]);
     printf("Usage: %s  yolov8_pose.rknn  0  world_params.csv\n", argv[0]);
+    printf("Usage: %s  yolov8_pose.rknn  0  world_params.csv  --debug\n", argv[0]);
+    printf("--debug: 在画面上显示AGV坐标取点位置\n");
     return -1;
   }
 
   const char *model_path = argv[1];
   const char *device_name = argv[2];
 
+  // 解析可选参数
+  bool debug_point = false;
+  for (int i = 3; i < argc; i++) {
+    if (strcmp(argv[i], "--debug") == 0) {
+      debug_point = true;
+      printf("调试模式：显示AGV取点位置\n");
+    }
+  }
+
   // 相机内外参
   Camera camera;
-  if (argc > 3) {
+  if (argc > 3 && argv[3][0] != '-') {
     if (!camera.loadFromCSV(argv[3])) {
       printf("加载相机参数失败，不进行坐标转换\n");
     } else {
@@ -398,8 +408,34 @@ int main(int argc, char **argv)
           pixel_x = (det_result->box.left + det_result->box.right) / 2.0f;
           pixel_y = alpha * box_center_y + (1.0f - alpha) * box_bottom_y;
 
-          printf("[AGV] box_h=%.0f alpha=%.2f pixel_y=%.0f (center=%.0f bottom=%.0f)\n",
-                 box_h, alpha, pixel_y, box_center_y, box_bottom_y);
+          if (debug_point) {
+            int cx = (int)pixel_x;
+            int py = (int)pixel_y;
+            int cy = (int)box_center_y;
+            int by = (int)box_bottom_y;
+            int bx_left  = det_result->box.left;
+            int bx_right = det_result->box.right;
+
+            // bbox 中心横线（绿色）
+            cv::line(frame, cv::Point(bx_left, cy), cv::Point(bx_right, cy),
+                     cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
+            // bbox 底边横线（红色）
+            cv::line(frame, cv::Point(bx_left, by), cv::Point(bx_right, by),
+                     cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+            // 当前取点横线（黄色，最粗最醒目）
+            cv::line(frame, cv::Point(bx_left, py), cv::Point(bx_right, py),
+                     cv::Scalar(0, 255, 255), 2, cv::LINE_AA);
+            // 实心圆标记取点（黄色）
+            cv::circle(frame, cv::Point(cx, py), 5, cv::Scalar(0, 255, 255), -1, cv::LINE_AA);
+            // 标注 alpha 和 box_h
+            char alpha_text[32];
+            snprintf(alpha_text, sizeof(alpha_text), "a=%.2f h=%.0f", alpha, box_h);
+            cv::putText(frame, alpha_text,
+                        cv::Point(bx_right + 3, py),
+                        cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 255), 1);
+            printf("[AGV] box_h=%.0f alpha=%.2f pixel_y=%.0f (center=%.0f bottom=%.0f)\n",
+                   box_h, alpha, pixel_y, box_center_y, box_bottom_y);
+          }
         }
 
         double world_x, world_y;
