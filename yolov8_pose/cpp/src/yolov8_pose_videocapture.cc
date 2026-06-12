@@ -244,15 +244,6 @@ int main(int argc, char **argv)
     }
   }
 
-  // 解析可选参数
-  bool debug_point = false;
-  for (int i = 3; i < argc; i++) {
-    if (strcmp(argv[i], "--debug") == 0) {
-      debug_point = true;
-      printf("调试模式：显示AGV取点位置\n");
-    }
-  }
-
   // 相机内外参
   Camera camera;
   if (argc > 3 && argv[3][0] != '-') {
@@ -425,11 +416,11 @@ int main(int argc, char **argv)
             int cy = (int)box_center_y;
             int by = (int)box_bottom_y;
 
-            // 画实心圆标记取点位置（黄色）
+            // 画实心圆标记取点位置(黄色)
             cv::circle(frame, cv::Point(cx, py), 6, cv::Scalar(0, 255, 255), -1, cv::LINE_AA);
-            // 画空心圆标记中心点（绿色）
+            // 画空心圆标记中心点(绿色)
             cv::circle(frame, cv::Point(cx, cy), 4, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
-            // 画空心圆标记底边点（红色）
+            // 画空心圆标记底边点(红色)
             cv::circle(frame, cv::Point(cx, by), 4, cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
             // 连线显示插值效果
             cv::line(frame, cv::Point(cx, cy), cv::Point(cx, by),
@@ -438,7 +429,7 @@ int main(int argc, char **argv)
             char alpha_text[32];
             snprintf(alpha_text, sizeof(alpha_text), "a=%.2f h=%.0f", alpha, box_h);
             cv::putText(frame, alpha_text,
-                        cv::Point(bx_right + 3, py),
+                        cv::Point(det_result->box.right + 3, py),
                         cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 255), 1);
             printf("[AGV] box_h=%.0f alpha=%.2f pixel_y=%.0f (center=%.0f bottom=%.0f)\n",
                    box_h, alpha, pixel_y, box_center_y, box_bottom_y);
