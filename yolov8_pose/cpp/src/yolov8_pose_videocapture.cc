@@ -244,15 +244,6 @@ int main(int argc, char **argv)
     }
   }
 
-  // 解析可选参数
-  bool debug_point = false;
-  for (int i = 3; i < argc; i++) {
-    if (strcmp(argv[i], "--debug") == 0) {
-      debug_point = true;
-      printf("调试模式：显示AGV取点位置\n");
-    }
-  }
-
   // 相机内外参
   Camera camera;
   if (argc > 3 && argv[3][0] != '-') {
@@ -438,7 +429,7 @@ int main(int argc, char **argv)
             char alpha_text[32];
             snprintf(alpha_text, sizeof(alpha_text), "a=%.2f h=%.0f", alpha, box_h);
             cv::putText(frame, alpha_text,
-                        cv::Point(bx_right + 3, py),
+                        cv::Point(det_result->box.right + 3, py),
                         cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 255), 1);
             printf("[AGV] box_h=%.0f alpha=%.2f pixel_y=%.0f (center=%.0f bottom=%.0f)\n",
                    box_h, alpha, pixel_y, box_center_y, box_bottom_y);
