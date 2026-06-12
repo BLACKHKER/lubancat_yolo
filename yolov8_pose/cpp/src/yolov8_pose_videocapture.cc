@@ -424,20 +424,16 @@ int main(int argc, char **argv)
             int py = (int)pixel_y;
             int cy = (int)box_center_y;
             int by = (int)box_bottom_y;
-            int bx_left  = det_result->box.left;
-            int bx_right = det_result->box.right;
 
-            // bbox中心横线(绿色)
-            cv::line(frame, cv::Point(bx_left, cy), cv::Point(bx_right, cy),
-                     cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
-            // bbox底边横线(红色)
-            cv::line(frame, cv::Point(bx_left, by), cv::Point(bx_right, by),
-                     cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
-            // 当前取点横线(黄色)
-            cv::line(frame, cv::Point(bx_left, py), cv::Point(bx_right, py),
-                     cv::Scalar(0, 255, 255), 2, cv::LINE_AA);
-            // 实心圆标记取点(黄色)
-            cv::circle(frame, cv::Point(cx, py), 5, cv::Scalar(0, 255, 255), -1, cv::LINE_AA);
+            // 画实心圆标记取点位置（黄色）
+            cv::circle(frame, cv::Point(cx, py), 6, cv::Scalar(0, 255, 255), -1, cv::LINE_AA);
+            // 画空心圆标记中心点（绿色）
+            cv::circle(frame, cv::Point(cx, cy), 4, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
+            // 画空心圆标记底边点（红色）
+            cv::circle(frame, cv::Point(cx, by), 4, cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+            // 连线显示插值效果
+            cv::line(frame, cv::Point(cx, cy), cv::Point(cx, by),
+                     cv::Scalar(128, 128, 128), 1, cv::LINE_AA);
             // 标注alpha和box_h
             char alpha_text[32];
             snprintf(alpha_text, sizeof(alpha_text), "a=%.2f h=%.0f", alpha, box_h);
