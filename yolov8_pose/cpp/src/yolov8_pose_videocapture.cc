@@ -25,11 +25,10 @@
 #define COORD_UNIT_DIVISOR  10.0
 #define COORD_UNIT_NAME     "cm"
 
-// AGV 自适应取点参数（需实测后填入）
-// BOX_H_MIN: 最远处 AGV 的 bbox 高度（像素），此时用底边中点
-// BOX_H_MAX: 最近处 AGV 的 bbox 高度（像素），此时用中心点
-#define AGV_BOX_H_MIN  50.0f   // TODO: 实测后修改
-#define AGV_BOX_H_MAX  180.0f  // TODO: 实测后修改
+// BOX_H_MIN: 最远处AGV的bbox像素高度
+// BOX_H_MAX: 最近处AGV的bbox像素高度
+#define AGV_BOX_H_MIN  15.0f
+#define AGV_BOX_H_MAX  70.0f
 
 #define RAISE_HAND_Y_THRESH 30.0f
 #define MOVE_DISTANCE_THRESH 15.0f
@@ -87,7 +86,7 @@ static bool get_hip_center(const object_detect_result *det, cv::Point2f &center)
   return false;
 }
 
-// 判断是否举手：手腕 y 坐标明显小于（高于）肩膀 y 坐标
+// 判断是否举手：手腕y坐标明显小于/高于肩膀y坐标
 static bool is_raising_hand(const object_detect_result *det)
 {
   // 左手举起
@@ -124,7 +123,7 @@ static bool is_moving(const cv::Point2f &current_hip)
   return dist > MOVE_DISTANCE_THRESH;
 }
 
-// 综合判断动作 优先级：举手 > 运动 > 静止
+// 综合判断动作 优先级：举手>运动>静止
 static Action classify_action(const object_detect_result *det)
 {
   // 举手判断
@@ -251,12 +250,12 @@ int main(int argc, char **argv)
   if (!mosq) {
     printf("MQTT: 创建客户端失败\n");
   } else if (mosquitto_connect(mosq, mqtt_broker, mqtt_port, 60) != MOSQ_ERR_SUCCESS) {
-    printf("MQTT: 连接 %s:%d 失败，将不发送坐标\n", mqtt_broker, mqtt_port);
+    printf("MQTT: 连接%s:%d失败，将不发送坐标\n", mqtt_broker, mqtt_port);
     mosquitto_destroy(mosq);
     mosq = nullptr;
   } else {
     mosquitto_loop_start(mosq);
-    printf("MQTT: 已连接 %s:%d\n", mqtt_broker, mqtt_port);
+    printf("MQTT: 已连接%s:%d\n", mqtt_broker, mqtt_port);
   }
 
   int ret;
@@ -277,7 +276,7 @@ int main(int argc, char **argv)
 
     if (!cap.isOpened())
     {
-      printf("Error: Could not open camera.\n");
+      printf("Error: Could not open camera\n");
       return -1;
     }
     // cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
@@ -290,7 +289,7 @@ int main(int argc, char **argv)
     cap.open(argv[2]);
     if (!cap.isOpened())
     {
-      printf("Error: Could not open video file.\n");
+      printf("Error: Could not open video file\n");
       return -1;
     }
   }
@@ -364,7 +363,7 @@ int main(int argc, char **argv)
 
       draw_pose(frame, det_result);
 
-      // 动作分类和显示（仅 person，cls_id=0）
+      // 动作分类和显示 仅person，cls_id=0
       const char *action_name = "none";
       if (det_result->cls_id == 0) {
         Action action = classify_action(det_result);
@@ -388,7 +387,7 @@ int main(int argc, char **argv)
           pixel_x = (det_result->keypoints[15][0] + det_result->keypoints[16][0]) / 2.0f;
           pixel_y = (det_result->keypoints[15][1] + det_result->keypoints[16][1]) / 2.0f;
         } else {
-          // AGV: 根据 bbox 高度自适应取点（近处→中心，远处→底边）
+          // 根据bbox高度自适应取点(近处靠近中心远处靠近底边)
           float box_h = det_result->box.bottom - det_result->box.top;
           float box_center_y = (det_result->box.top + det_result->box.bottom) / 2.0f;
           float box_bottom_y = det_result->box.bottom;
@@ -416,7 +415,7 @@ int main(int argc, char **argv)
                       cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
           printf("%s World: (%.1f, %.1f) %s\n", coco_cls_to_name(det_result->cls_id), out_x, out_y, COORD_UNIT_NAME);
 
-          // MQTT 发布：person 和 agv 分不同主题
+          // MQTT发布: person和agv分不同主题
           if (mosq) {
             char payload[256];
             if (det_result->cls_id == 0) {
@@ -448,7 +447,7 @@ int main(int argc, char **argv)
       frame = camera.drawCoordinateSystem(frame, 500.0, 2);
     }
 
-    // FPS 统计
+    // FPS统计
     gettimeofday(&frame_end, NULL);
     double frame_ms = (frame_end.tv_sec - frame_start.tv_sec) * 1000.0 +
                       (frame_end.tv_usec - frame_start.tv_usec) / 1000.0;
@@ -460,9 +459,9 @@ int main(int argc, char **argv)
     cv::putText(frame, fps_text, cv::Point(10, 30),
                 cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 255), 2);
 
-    // 每 30 帧打印一次性能汇总
+    // 每30帧打印一次性能汇总
     if (frame_count % 30 == 0) {
-      printf("===== 性能: FPS=%.1f, 端到端=%.1fms, 检测数=%d =====\n",
+      printf("=====性能:FPS=%.1f, 端到端=%.1fms, 检测数=%d====\n",
              fps, frame_ms, od_results.count);
     }
 
