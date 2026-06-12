@@ -6,3 +6,5 @@
 **/datasets/*
 **/*.onnx
 **/*.csv
+
+**/*.jpg
