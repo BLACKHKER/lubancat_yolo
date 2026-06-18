@@ -222,13 +222,12 @@ int main(int argc, char **argv)
 {
   if (argc < 3)
   {
-    printf("%s <model path> <camera device id/video path> [world_params.csv] [--debug]\n", argv[0]);
-    printf("Usage: %s  yolov8_pose.rknn  0\n", argv[0]);
-    printf("%s <model path> <camera device id/video path> [world_params.csv] [--debug]\n", argv[0]);
+    printf("Usage: %s <model path> <camera device id/video path> [world_params.csv] [--board-id <id>] [--debug]\n", argv[0]);
     printf("Usage: %s  yolov8_pose.rknn  0\n", argv[0]);
     printf("Usage: %s  yolov8_pose.rknn  0  world_params.csv\n", argv[0]);
-    printf("Usage: %s  yolov8_pose.rknn  0  world_params.csv  --debug\n", argv[0]);
-    printf("--debug: 在画面上显示AGV坐标取点位置\n");
+    printf("Usage: %s  yolov8_pose.rknn  0  world_params.csv  --board-id rk_01  --debug\n", argv[0]);
+    printf("--board-id: 板子唯一标识，多相机部署时区分数据来源\n");
+    printf("--debug:    在画面上显示AGV坐标取点位置\n");
     return -1;
   }
 
@@ -237,10 +236,15 @@ int main(int argc, char **argv)
 
   // 解析可选参数
   bool debug_point = false;
+  const char *board_id = "rk_00";  // 默认board_id
   for (int i = 3; i < argc; i++) {
     if (strcmp(argv[i], "--debug") == 0) {
       debug_point = true;
       printf("调试模式：显示AGV取点位置\n");
+    } else if (strcmp(argv[i], "--board-id") == 0 && i + 1 < argc) {
+      board_id = argv[i + 1];
+      i++;  // 跳过下一个参数(board_id的值)
+      printf("board_id: %s\n", board_id);
     }
   }
 
@@ -449,19 +453,23 @@ int main(int argc, char **argv)
                       cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
           printf("%s World: (%.1f, %.1f) %s\n", coco_cls_to_name(det_result->cls_id), out_x, out_y, COORD_UNIT_NAME);
 
-          // MQTT发布: person和agv分不同主题
+          // MQTT发布: person和agv分不同主题，附带board_id和毫秒时间戳
           if (mosq) {
-            char payload[256];
+            char payload[512];
+            struct timeval tv_now;
+            gettimeofday(&tv_now, NULL);
+            long long ts_ms = (long long)tv_now.tv_sec * 1000 + tv_now.tv_usec / 1000;
+
             if (det_result->cls_id == 0) {
               snprintf(payload, sizeof(payload),
-                       "{\"x\":%.2f,\"y\":%.2f,\"unit\":\"%s\",\"action\":\"%s\",\"conf\":%.2f}",
-                       out_x, out_y, COORD_UNIT_NAME, action_name, det_result->prop);
+                       "{\"board_id\":\"%s\",\"timestamp\":%lld,\"x\":%.2f,\"y\":%.2f,\"unit\":\"%s\",\"action\":\"%s\",\"conf\":%.2f}",
+                       board_id, ts_ms, out_x, out_y, COORD_UNIT_NAME, action_name, det_result->prop);
               mosquitto_publish(mosq, nullptr, "yolov8_pose/person",
                                 strlen(payload), payload, 0, false);
             } else {
               snprintf(payload, sizeof(payload),
-                       "{\"x\":%.2f,\"y\":%.2f,\"unit\":\"%s\",\"conf\":%.2f}",
-                       out_x, out_y, COORD_UNIT_NAME, det_result->prop);
+                       "{\"board_id\":\"%s\",\"timestamp\":%lld,\"x\":%.2f,\"y\":%.2f,\"unit\":\"%s\",\"conf\":%.2f}",
+                       board_id, ts_ms, out_x, out_y, COORD_UNIT_NAME, det_result->prop);
               mosquitto_publish(mosq, nullptr, "yolov8_pose/agv",
                                 strlen(payload), payload, 0, false);
             }
