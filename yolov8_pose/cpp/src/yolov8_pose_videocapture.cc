@@ -420,12 +420,12 @@ int main(int argc, char **argv)
             int cy = (int)box_center_y;
             int by = (int)box_bottom_y;
 
-            // 画实心圆标记取点位置（黄色）
-            cv::circle(frame, cv::Point(cx, py), 6, cv::Scalar(0, 255, 255), -1, cv::LINE_AA);
-            // 画空心圆标记中心点（绿色）
-            cv::circle(frame, cv::Point(cx, cy), 4, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
-            // 画空心圆标记底边点（红色）
-            cv::circle(frame, cv::Point(cx, by), 4, cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+            // 画实心圆标记取点位置(黄色)
+            cv::circle(frame, cv::Point(cx, py), 3, cv::Scalar(0, 255, 255), -1, cv::LINE_AA);
+            // 画空心圆标记中心点(绿色)
+            cv::circle(frame, cv::Point(cx, cy), 2, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
+            // 画空心圆标记底边点(红色)
+            cv::circle(frame, cv::Point(cx, by), 2, cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
             // 连线显示插值效果
             cv::line(frame, cv::Point(cx, cy), cv::Point(cx, by),
                      cv::Scalar(128, 128, 128), 1, cv::LINE_AA);
